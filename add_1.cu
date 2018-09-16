@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+#include "devices.cu"
 
 // Execute with: nvcc add_1.cu -o add_1_cuda
 // Profile with: nvprof ./add_1_cuda (takes around 0.2 secs on NVIDIA GTX 1050ti - compute cap 6.1)

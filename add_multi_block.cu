@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+#include "devices.cu"
 
 // Execute with: nvcc add_multi_block.cu -o add_multi_block_cuda
 // Profile with: nvprof ./add_multi_block_cuda (takes around 0.0025 secs with 256 parallel threads on multiple thread blocks on NVIDIA GTX 1050ti - compute cap 6.1)
@@ -14,6 +15,9 @@ void add(int n, float *x, float *y) {
 }
 
 int main() {
+
+    getCudaDeviceInfo();
+
     int N = 1<<20; // 1M elements
 
     float *x, *y;
@@ -29,10 +33,12 @@ int main() {
     
     int blockSize = 256;
     int numBlocks = (N + blockSize - 1) / blockSize;
+    std::cout << numBlocks << std::endl;
 
     // run kernel on 1M elements on the GPU
     add<<<numBlocks, blockSize>>>(N, x, y); // execution config (no. of parallel threads to use for the launch of the GPU)
     // <<< no.of thread blocks, no. of threads in a thread block>>>
+    // grid(4096 blocks) is blocks(256 threads) of threads
 
     // wait for GPU to finish before accessing on host
     cudaDeviceSynchronize();

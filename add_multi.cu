@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+#include "devices.cu"
 
 // Execute with: nvcc add_multi.cu -o add_multi_cuda
 // Profile with: nvprof ./add_multi_cuda (takes around 0.003 secs with 256 parallel threads on NVIDIA GTX 1050ti - compute cap 6.1)
