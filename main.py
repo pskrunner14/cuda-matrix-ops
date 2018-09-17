@@ -3,7 +3,7 @@ import ctypes
 
 from ctypes import *
 
-# Build cuda lib using: nvcc -Xcompiler -fPIC -shared -o lib/cuda_mat_mul.so matmul.cu
+# Build cuda lib using: nvcc -Xcompiler -fPIC -shared -o ops/lib/cuda_mat_mul.so ops/matmul.cu
 
 # extract cuda_mat_mul function pointer in the shared object cuda_mat_mul.so
 def get_cuda_mat_mul():

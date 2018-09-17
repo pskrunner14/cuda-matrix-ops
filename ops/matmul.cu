@@ -35,9 +35,9 @@ extern "C" {
         float *d_a, *d_b, *d_c;
         int size = N * N;
 
-        cudaMalloc((void **)&d_a, size * sizeof(float));
-        cudaMalloc((void **)&d_b, size * sizeof(float));
-        cudaMalloc((void **)&d_c, size * sizeof(float));
+        cudaMallocManaged(&d_a, size * sizeof(float));
+        cudaMallocManaged(&d_b, size * sizeof(float));
+        cudaMallocManaged(&d_c, size * sizeof(float));
 
         cudaMemcpy(d_a, a, size * sizeof(float), cudaMemcpyHostToDevice);
         cudaMemcpy(d_b, b, size * sizeof(float), cudaMemcpyHostToDevice);
