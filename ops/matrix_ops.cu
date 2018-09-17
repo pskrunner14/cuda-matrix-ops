@@ -4,7 +4,7 @@
  *  @author Prabhsimran Singh
  *  @version 1.0 17/09/18
  *
- *  Build using: nvcc -Xcompiler -fPIC -shared -o lib/cuda_mat_mul.so matmul.cu
+ *  Build using: nvcc -Xcompiler -fPIC -shared -o lib/cuda_mat_ops.so matrix_ops.cu
  */
 
 #include <iostream>
@@ -22,14 +22,34 @@
  * @param a the float pointer to first input array
  * @param b the float pointer to second input array
  * @param c the float pointer to output array
- * @param n the size of the arrays
+ * @param m the no. of rows in the arrays
+ * @param n the no. of cols in the arrays
  * @return void
  */
-__global__ void matSum(float *a, float *b, float *c, int n) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
-    for (int i = index; i < n; i += stride)
-        c[i] = a[i] + b[i];
+__global__ void matSum(float *a, float *b, float *c, int m, int n) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < m && col < n)
+        c[row * n + col] = a[row * n + col] + b[row * n + col];
+}
+
+/**
+ * Calculates element-wise product of two matrices (using parallel threads on CUDA capable device)
+ *
+ * @param a the float pointer to first input array
+ * @param b the float pointer to second input array
+ * @param c the float pointer to output array
+ * @param m the no. of rows in the arrays
+ * @param n the no. of cols in the arrays
+ * @return void
+ */
+ __global__ void matProd(float *a, float *b, float *c, int m, int n) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < m && col < n)
+        c[row * n + col] = a[row * n + col] * b[row * n + col];
 }
 
 /**
@@ -58,22 +78,52 @@ __global__ void matMul(float *a, float *b, float *c, int m, int n, int k) {
 
 extern "C" {
 
-    void cuda_mat_sum(float *a, float *b, float *c, int n) {
+    void cuda_mat_sum(float *a, float *b, float *c, int m, int n) {
         float *d_a, *d_b, *d_c;
 
-        cudaMallocManaged(&d_a, n * sizeof(float));
-        cudaMallocManaged(&d_b, n * sizeof(float));
-        cudaMallocManaged(&d_c, n * sizeof(float));
+        cudaMallocManaged(&d_a, (m * n) * sizeof(float));
+        cudaMallocManaged(&d_b, (m * n) * sizeof(float));
+        cudaMallocManaged(&d_c, (m * n) * sizeof(float));
 
-        cudaMemcpy(d_a, a, n * sizeof(float), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_b, b, n * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_a, a, (m * n) * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_b, b, (m * n) * sizeof(float), cudaMemcpyHostToDevice);
 
-        const int numBlocks = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        unsigned int grid_rows = sqrt(BLOCK_SIZE);
+        unsigned int grid_cols = m / grid_rows;
 
-        matSum<<<numBlocks, BLOCK_SIZE>>>(d_a, d_b, d_c, n);
+        dim3 dimGrid(grid_cols, grid_cols, 1);
+        dim3 dimBlock(grid_rows, grid_rows, 1);
+
+        matSum<<<dimGrid, dimBlock>>>(d_a, d_b, d_c, m, n);
         cudaDeviceSynchronize();
 
-        cudaMemcpy(c, d_c, n * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(c, d_c, (m * n) * sizeof(float), cudaMemcpyDeviceToHost);
+
+        cudaFree(d_a);
+        cudaFree(d_b);
+        cudaFree(d_c);
+    }
+
+    void cuda_mat_prod(float *a, float *b, float *c, int m, int n) {
+        float *d_a, *d_b, *d_c;
+
+        cudaMallocManaged(&d_a, (m * n) * sizeof(float));
+        cudaMallocManaged(&d_b, (m * n) * sizeof(float));
+        cudaMallocManaged(&d_c, (m * n) * sizeof(float));
+
+        cudaMemcpy(d_a, a, (m * n) * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_b, b, (m * n) * sizeof(float), cudaMemcpyHostToDevice);
+
+        unsigned int grid_rows = sqrt(BLOCK_SIZE);
+        unsigned int grid_cols = m / grid_rows;
+
+        dim3 dimGrid(grid_cols, grid_cols, 1);
+        dim3 dimBlock(grid_rows, grid_rows, 1);
+
+        matProd<<<dimGrid, dimBlock>>>(d_a, d_b, d_c, m, n);
+        cudaDeviceSynchronize();
+
+        cudaMemcpy(c, d_c, (m * n) * sizeof(float), cudaMemcpyDeviceToHost);
 
         cudaFree(d_a);
         cudaFree(d_b);
