@@ -7,7 +7,7 @@ void getCudaDeviceInfo() {
     for (int i = 0; i < nDevices; i++) {
         cudaDeviceProp prop;
         cudaGetDeviceProperties(&prop, i);
-        cout << "GPU Device" << i << ":" << endl;
+        cout << "GPU Device Id: " << i << endl;
         cout << "Device name: " << prop.name << endl;
         cout << "Memory Clock Rate (KHz): " << 
             prop.memoryClockRate << endl;

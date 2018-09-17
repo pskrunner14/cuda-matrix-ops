@@ -1,12 +1,12 @@
 #include <iostream>
 #include <math.h>
-#include "utils/devices.cu"
+#include "../ops/utils/devices.cu"
 
 // Execute with: nvcc add_multi_block.cu -o add_multi_block_cuda
 // Profile with: nvprof ./add_multi_block_cuda (takes around 0.0025 secs with 256 parallel threads on multiple thread blocks on NVIDIA GTX 1050ti - compute cap 6.1)
 
 // CUDA Kernel function to add the elements of two arrays on the GPU
-__global__ void add(int n, float *x, float *y) { // device code - runs on GPU
+__global__ void addMatrix(float *x, float *y, int n) { // device code - runs on GPU
     int index = blockIdx.x * blockDim.x + threadIdx.x; // modify code to spread computation across parallel thread block
     int stride = blockDim.x * gridDim.x;
     for (int i = index; i < n; i += stride)
