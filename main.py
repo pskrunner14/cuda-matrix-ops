@@ -3,7 +3,7 @@ import ctypes
 
 from ctypes import POINTER, c_float, c_int
 
-# Build cuda lib using: nvcc -Xcompiler -fPIC -shared -o lib/cuda_mat_ops.so ops/matrix_ops.cu
+# Build shared object file using: nvcc -Xcompiler -fPIC -shared -o lib/cuda_mat_ops.so ops/matrix_ops.cu
 # extract cuda function pointers in the shared object cuda_mat_ops.so
 dll = ctypes.CDLL('./lib/cuda_mat_ops.so', mode=ctypes.RTLD_GLOBAL)
 
@@ -48,12 +48,12 @@ def main():
     # Matrix Multiplication
     a, b, c, size = get_test_params()
     cuda_mat_mul(a, b, c, size, size, size)
-    assert np.all(c == 96.0), "Matrix multiplication is buggy"
+    assert np.all(c==96.0), "Matrix multiplication is buggy"
 
     # Matrix Elementwise Addition
     a, b, c, size = get_test_params()
     cuda_mat_sum(a, b, c, size * size)
-    assert np.all(c == 5.0), "Matrix addition is buggy"
+    assert np.all(c==5.0), "Matrix addition is buggy"
 
     print("Passed all tests!")
 

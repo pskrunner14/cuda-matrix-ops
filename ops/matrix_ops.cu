@@ -1,3 +1,12 @@
+/**
+ *  CUDA PARALLEL PROGRAMMING: matrix_ops.cu
+ *  Purpose: Matrix Operations using CUDA C/C++
+ *  @author Prabhsimran Singh
+ *  @version 1.0 17/09/18
+ *
+ *  Build using: nvcc -Xcompiler -fPIC -shared -o lib/cuda_mat_mul.so matmul.cu
+ */
+
 #include <iostream>
 #include <math.h>
 #include <cuda.h>
@@ -7,8 +16,15 @@
 
 #define BLOCK_SIZE 256
 
-// Build using: nvcc -Xcompiler -fPIC -shared -o lib/cuda_mat_mul.so matmul.cu
-
+/**
+ * Calculates element-wise sum of two matrices (using parallel threads on CUDA capable device)
+ *
+ * @param a the float pointer to first input array
+ * @param b the float pointer to second input array
+ * @param c the float pointer to output array
+ * @param n the size of the arrays
+ * @return void
+ */
 __global__ void matSum(float *a, float *b, float *c, int n) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
@@ -16,6 +32,17 @@ __global__ void matSum(float *a, float *b, float *c, int n) {
         c[i] = a[i] + b[i];
 }
 
+/**
+ * Calculates dot-product of two matrices (using parallel threads on CUDA capable device)
+ *
+ * @param a the float pointer to first input array
+ * @param b the float pointer to second input array
+ * @param c the float pointer to output array
+ * @param m the no. rows in a(m x n) and c(m x k)
+ * @param n the no. cols in a(m x n) and rows in b(n x k)
+ * @param k the no. cols in b(n x k) and c(m x k)
+ * @return void
+ */
 __global__ void matMul(float *a, float *b, float *c, int m, int n, int k) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
@@ -41,10 +68,9 @@ extern "C" {
         cudaMemcpy(d_a, a, n * sizeof(float), cudaMemcpyHostToDevice);
         cudaMemcpy(d_b, b, n * sizeof(float), cudaMemcpyHostToDevice);
 
-        int blockSize = 256;
-        int numBlocks = (n + blockSize - 1) / blockSize;
+        const int numBlocks = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
-        matSum<<<numBlocks, blockSize>>>(d_a, d_b, d_c, n);
+        matSum<<<numBlocks, BLOCK_SIZE>>>(d_a, d_b, d_c, n);
         cudaDeviceSynchronize();
 
         cudaMemcpy(c, d_c, n * sizeof(float), cudaMemcpyDeviceToHost);
