@@ -71,7 +71,7 @@ __global__ void matMul(float *a, float *b, float *c, int m, int n, int k) {
 
     if (row < m && col < k) {
         for (int i = 0; i < n; i++)
-            sum += a[row * n + i] * b[i * n + col];
+            sum += a[row * n + i] * b[i * k + col];
         c[row * k + col] = sum;
     }
 }
