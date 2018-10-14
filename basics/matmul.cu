@@ -3,12 +3,35 @@
 #include "../ops/utils/devices.cu"
 #include "../ops/utils/utils.cpp"
 
-#define BLOCK_SIZE 16
+// execute with
+// nvcc -o out matmul.cu -run --gpu-architecture=compute_61 --gpu-code=sm_61,compute_61
+
+#define BLOCK_SIZE 256
+
+/**
+Inside a CUDA kernel:
+
+gridDim.x - number of blocks in the grid
+blockIdx.x - index of current block within the grid
+blockDim.x - number of threads in the block
+threadIdx.x - index of current thread inside the block
+
+note: 
+    Threads are grouped into thread blocks, 
+    blocks are grouped into a grid, which is 
+    the highest entity in the CUDA thread hierarchy. 
+    In summary, CUDA kernels are executed in a grid 
+    of 1 or more blocks, with each block containing 
+    the same number of 1 or more threads.
+
+ */
 
 __global__ void matMul(float* A, float* B, float* C, int m, int n, int k) {
 
     int ROW = blockIdx.y * blockDim.y + threadIdx.y;
     int COL = blockIdx.x * blockDim.x + threadIdx.x;
+
+    printf("%d-%d\n", ROW, COL);
 
     float sum = 0;
 
@@ -38,8 +61,8 @@ int main() {
     // Initialize matrices on the host
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
-            A[i * N + j] = 2.0f;
-            B[i * N + j] = 3.0f;
+            A[i * N + j] = 2.5f;
+            B[i * N + j] = 2.0f;
         }
     }
 
@@ -52,11 +75,11 @@ int main() {
     matMul<<<dimGrid, dimBlock>>>(A, B, C, N, N, N);
     cudaDeviceSynchronize();
 
-    // check for errors (all vals should be 96.0f)
+    // check for errors (all vals should be 80.0f)
     float maxError = 0.0f;
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++)
-            maxError = fmax(maxError, fabs(C[i * N + j] - 96.0f));
+            maxError = fmax(maxError, fabs(C[i * N + j] - 80.0f));
     }
     std::cout << "Max Error: " << maxError << std::endl;
 
