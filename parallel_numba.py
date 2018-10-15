@@ -10,9 +10,20 @@ from numba import cuda
 NUM_THREADS = 32
 
 def get_cuda_execution_config(m, n):
-    gridBlock = (NUM_THREADS, NUM_THREADS)
-    gridDim = ((n // gridBlock[0]) + 1, (m // gridBlock[1]) + 1)
-    return gridDim, gridBlock
+    """ Calculates the execution configuration optimal for maximum 
+    occupancy of the grid for launching a CUDA kernel.
+
+    Args:
+        m (int): number of rows of matrix.
+        n (int): number of cols of matrix.
+
+    Returns:
+        tuple of `int`: grid dimensions for launching kernel, equivalent to `dim3` type.
+        tuple of `int`: block dimensions for launching kernel, equivalent to `dim3` type.
+    """
+    dimBlock = (NUM_THREADS, NUM_THREADS)
+    dimGrid = ((n // dimBlock[0]) + 1, (m // dimBlock[1]) + 1)
+    return dimGrid, dimBlock
 
 @cuda.jit
 def matmul(a, b, c, m, n, k):
@@ -39,21 +50,21 @@ def matprod(a, b, c, m, n):
         c[row, col] = a[row, col] * b[row, col]
 
 @cuda.jit
-def elemwise_sum(a, value, c, m, n):
+def sum(a, value, c, m, n):
     row = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
     col = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     if row < m and col < n:
         c[row, col] = a[row, col] + value
 
 @cuda.jit
-def elemwise_prod(a, value, c, m, n):
+def prod(a, value, c, m, n):
     row = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
     col = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     if row < m and col < n:
         c[row, col] = a[row, col] * value
 
 @cuda.jit
-def elemwise_max(a, value, c, m, n):
+def maximum(a, value, c, m, n):
     row = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
     col = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     if row < m and col < n:
@@ -85,11 +96,11 @@ if __name__ == '__main__':
     assert np.all((a + b) == c), 'matsum op is buggy'
     matprod[dimGrid, dimBlock](a, b, c, M, N)
     assert np.all((a * b) == c), 'matprod op is buggy'
-    elemwise_sum[dimGrid, dimBlock](a, value, c, M, N)
+    sum[dimGrid, dimBlock](a, value, c, M, N)
     assert np.all((a + value) == c), 'elem-wise sum op is buggy'
-    elemwise_prod[dimGrid, dimBlock](a, value, c, M, N)
+    prod[dimGrid, dimBlock](a, value, c, M, N)
     assert np.all((a * value) == c), 'elem-wise prod op is buggy'
-    elemwise_max[dimGrid, dimBlock](a, 0., c, M, N)
+    maximum[dimGrid, dimBlock](a, 0., c, M, N)
     assert np.all(np.maximum(a, 0.) == c), 'elem-wise max op is buggy'
 
     print('Passed all tests!')

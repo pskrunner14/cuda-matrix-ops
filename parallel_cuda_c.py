@@ -14,6 +14,7 @@ from ctypes import POINTER, c_double, c_int
 # extract cuda function pointers in the shared object cuda_c.so
 dll = ctypes.CDLL('./lib/cuda_mat_ops.so', mode=ctypes.RTLD_GLOBAL)
 
+# get the required functions exposed by CUDA C/C++ API
 def get_cuda_device_info(dll):
     func = dll.cuda_device_info
     return func
@@ -33,18 +34,18 @@ def get_cuda_matprod(dll):
     func.argtypes = [POINTER(c_double), POINTER(c_double), POINTER(c_double), c_int, c_int]
     return func
 
-def get_cuda_elemwise_sum(dll):
-    func = dll.cuda_elemwise_sum
+def get_cuda_sum(dll):
+    func = dll.cuda_sum
     func.argtypes = [POINTER(c_double), c_double, POINTER(c_double), c_int, c_int]
     return func
 
-def get_cuda_elemwise_prod(dll):
-    func = dll.cuda_elemwise_prod
+def get_cuda_prod(dll):
+    func = dll.cuda_prod
     func.argtypes = [POINTER(c_double), c_double, POINTER(c_double), c_int, c_int]
     return func
 
-def get_cuda_elemwise_max(dll):
-    func = dll.cuda_elemwise_max
+def get_cuda_maximum(dll):
+    func = dll.cuda_maximum
     func.argtypes = [POINTER(c_double), c_double, POINTER(c_double), c_int, c_int]
     return func
 
@@ -52,9 +53,9 @@ __cuda_device_info = get_cuda_device_info(dll)
 __cuda_matmul = get_cuda_matmul(dll)
 __cuda_matsum = get_cuda_matsum(dll)
 __cuda_matprod = get_cuda_matprod(dll)
-__cuda_elemwise_sum = get_cuda_elemwise_sum(dll)
-__cuda_elemwise_prod = get_cuda_elemwise_prod(dll)
-__cuda_elemwise_max = get_cuda_elemwise_max(dll)
+__cuda_sum = get_cuda_sum(dll)
+__cuda_prod = get_cuda_prod(dll)
+__cuda_maximum = get_cuda_maximum(dll)
 
 # convenient python wrappers for cuda functions
 def cuda_device_info():
@@ -78,23 +79,23 @@ def cuda_matprod(a, b, c, m, n):
     c_p = c.ctypes.data_as(POINTER(c_double))
     __cuda_matprod(a_p, b_p, c_p, m, n)
 
-def cuda_elemwise_sum(a, b, c, m, n):
+def cuda_sum(a, b, c, m, n):
     a_p = a.ctypes.data_as(POINTER(c_double))
     b_f = ctypes.c_double(b)
     c_p = c.ctypes.data_as(POINTER(c_double))
-    __cuda_elemwise_sum(a_p, b_f, c_p, m, n)
+    __cuda_sum(a_p, b_f, c_p, m, n)
 
-def cuda_elemwise_prod(a, b, c, m, n):
+def cuda_prod(a, b, c, m, n):
     a_p = a.ctypes.data_as(POINTER(c_double))
     b_f = ctypes.c_double(b)
     c_p = c.ctypes.data_as(POINTER(c_double))
-    __cuda_elemwise_prod(a_p, b_f, c_p, m, n)
+    __cuda_prod(a_p, b_f, c_p, m, n)
 
-def cuda_elemwise_max(a, b, c, m, n):
+def cuda_maximum(a, b, c, m, n):
     a_p = a.ctypes.data_as(POINTER(c_double))
     b_f = ctypes.c_double(b)
     c_p = c.ctypes.data_as(POINTER(c_double))
-    __cuda_elemwise_max(a_p, b_f, c_p, m, n)
+    __cuda_maximum(a_p, b_f, c_p, m, n)
 
 def get_test_params():
     size = int(16)
@@ -114,11 +115,11 @@ if __name__ == '__main__':
     assert np.all(c==6.0), "Matrix sum operation is buggy"
     cuda_matprod(a, b, c, size, size)
     assert np.all(c==9.0), "Matrix product operation is buggy"
-    cuda_elemwise_sum(a, 5.0, c, size, size)
+    cuda_sum(a, 5.0, c, size, size)
     assert np.all(c==8.0), "Element-wise sum operation is buggy"
-    cuda_elemwise_prod(a, 2.5, c, size, size)
+    cuda_prod(a, 2.5, c, size, size)
     assert np.all(c==7.5), "Element-wise product operation is buggy"
-    cuda_elemwise_max(a, 4.0, c, size, size)
+    cuda_maximum(a, 4.0, c, size, size)
     assert np.all(c==4.0), "Element-wise max operation is buggy"
 
     # robust check for matmul
@@ -138,11 +139,11 @@ if __name__ == '__main__':
     assert np.all(a + b == c), "Matrix sum operation is buggy"
     cuda_matprod(a, b, c, 100, 200)
     assert np.all(a * b == c), "Matrix product operation is buggy"
-    cuda_elemwise_sum(a, 5.3, c, 100, 200)
+    cuda_sum(a, 5.3, c, 100, 200)
     assert np.all(a + 5.3 == c), "Element-wise sum operation is buggy"
-    cuda_elemwise_prod(a, 6, c, 100, 200)
+    cuda_prod(a, 6, c, 100, 200)
     assert np.all(a * 6 == c), "Element-wise product operation is buggy"
-    cuda_elemwise_max(a, 0, c, 100, 200)
+    cuda_maximum(a, 0, c, 100, 200)
     assert np.all(np.maximum(0, a) == c), "Element-wise max operation is buggy"
 
     print('Passed all tests!')

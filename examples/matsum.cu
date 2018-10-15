@@ -1,69 +1,71 @@
 #include <iostream>
-#include <math.h>
 #include "../ops/utils/devices.cu"
 #include "../ops/utils/utils.cpp"
 
-// compile and execute with
-// nvcc -o out matsum.cu -run --gpu-architecture=compute_61 --gpu-code=sm_61,compute_61
+#define NUM_THREADS 32
 
-#define BLOCK_SIZE 16
+__global__ void matsum(float* a, float* b, float* c, int m, int n) {
 
-__global__ void matSum(float* A, float* B, float* C, int m, int n) {
-
-    int ROW = blockIdx.y * blockDim.y + threadIdx.y;
-    int COL = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
 
     // each thread computes one element of the block sub-matrix
-    if (ROW < m && COL < n) {
-        C[ROW * n + COL] = A[ROW * n + COL] + B[ROW * n + COL];
+    if (row < m && col < n) {
+        c[row * n + col] = a[row * n + col] + b[row * n + col];
     }
 }
 
 int main() {
     getCudaDeviceInfo();
 
-    // Perform matrix multiplication C = A*B
-    // where A, B and C are NxN matrices
-    int M = 20000;
-    int N = 16327;
+    // Define matrix dimensions.
+    int m = 20000;
+    int n = 16327;
 
-    // Allocate memory on the host
-    float *A, *B, *C;
+    // Allocate memory on the host.
+    float *a, *b, *c;
 
-    cudaMallocManaged(&A, (M * N) * sizeof(float));
-    cudaMallocManaged(&B, (M * N) * sizeof(float));
-    cudaMallocManaged(&C, (M * N) * sizeof(float));
+    // Allocate memory on the device.
+    cudaMallocManaged(&a, (m * n) * sizeof(float));
+    cudaMallocManaged(&b, (m * n) * sizeof(float));
+    cudaMallocManaged(&c, (m * n) * sizeof(float));
 
-    float a = 343.5534f;
-    float b = 7254.1543f;
+    // Dummy values.
+    float x = 343.5534f;
+    float y = 7254.1543f;
 
-    // Initialize matrices on the host
-    for (int i = 0; i < M; i++) {
-        for (int j = 0; j < N; j++) {
-            A[i * N + j] = a;
-            B[i * N + j] = b;
+    // Initialize matrices on the host.
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            a[i * n + j] = x;
+            b[i * n + j] = y;
         }
     }
 
-    dim3 dimGrid((N + BLOCK_SIZE - 1) / BLOCK_SIZE, (M + BLOCK_SIZE - 1) / BLOCK_SIZE);
-    dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
+    // Define grid and block dimensions for the execution 
+    // configuration with which to launch the CUDA kernel.
+    dim3 dimBlock(NUM_THREADS, NUM_THREADS, 1);
+    dim3 dimGrid((n / dimBlock.x) + 1, (m / dimBlock.y) + 1, 1);
 
-    matSum<<<dimGrid, dimBlock>>>(A, B, C, M, N);
+    // Launch kernel with specified exec config.
+    matsum<<<dimGrid, dimBlock>>>(a, b, c, m, n);
+    // Wait for device to sync back with host.
     cudaDeviceSynchronize();
 
-    // printMatrix(C, M, N);
-
-    // check for errors (all vals should be 10.6f)
+    // check for errors (all vals should be equal to (x + y))
     float maxError = 0.0f;
-    for (int i = 0; i < M; i++) {
-        for (int j = 0; j < N; j++)
-            maxError = fmax(maxError, fabs(C[i * N + j] - (a + b)));
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            maxError = fmax(maxError, fabs(c[i * n + j] - (x + y)));
+        }
     }
+    // Log errors if any.
     std::cout << "Max Error: " << maxError << std::endl;
 
-    cudaFree(A);
-    cudaFree(B);
-    cudaFree(C);
+    // Free memory allocated on the device.
+    cudaFree(a);
+    cudaFree(b);
+    cudaFree(c);
 
     return 0;
 }
