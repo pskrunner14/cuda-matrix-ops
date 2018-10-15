@@ -1,3 +1,3 @@
-# Parallel Programming with CUDA C/C++
+# Parallel Programming
 
-Basics of Parallel Programming with CUDA C/C++ and interfacing python with CUDA C/C++ code.
+Parallel Programming and interfacing Python with CUDA C/C++ code.
