@@ -3,7 +3,7 @@
 #include "../ops/utils/devices.cu"
 #include "../ops/utils/utils.cpp"
 
-// execute with
+// compile and execute with
 // nvcc -o out matmul.cu -run --gpu-architecture=compute_61 --gpu-code=sm_61,compute_61
 
 #define BLOCK_SIZE 16
