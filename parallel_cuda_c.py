@@ -3,8 +3,8 @@ CUDA PARALLEL PROGRAMMING: cuda_c_ops.py
 *  Purpose: Python interface for performing matrix operations using CUDA C/C++
 *  @author Prabhsimran Singh
 *  @version 2.2 15/10/18
-*  Build Using:
-    nvcc -Xcompiler -fPIC -shared -o lib/cuda_mat_ops.so ops/matrix_ops.cu --gpu-architecture=compute_61 --gpu-code=sm_61,compute_61
+*  Build shared object library using:
+    nvcc -Xcompiler -fPIC -shared -o lib/cuda_mat_ops.so ops/matrix_ops.cu
 """
 import ctypes
 import numpy as np
@@ -103,7 +103,7 @@ def get_test_params():
     c = np.zeros(shape=(size * size))
     return a, b, c, size
 
-def main():
+if __name__ == '__main__':
     cuda_device_info()
 
     a, b, c, size = get_test_params()
@@ -146,6 +146,3 @@ def main():
     assert np.all(np.maximum(0, a) == c), "Element-wise max operation is buggy"
 
     print('Passed all tests!')
-
-if __name__ == '__main__':
-    main()
