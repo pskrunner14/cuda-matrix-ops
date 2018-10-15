@@ -90,14 +90,14 @@ int main() {
     for( int row = 0; row < M && !error; row++) {
         for( int col = 0; col < K && !error; col++) {
             if (c_gpu[row * K + col] != ((x * y) * N)) {
-                printf("FOUND ERROR at c[%d][%d]\n", row, col);
+                cout << "FOUND ERROR at c[" << row << "][" << col << "]" << endl;
                 error = true;
                 break;
             }
         }
     }
     if (!error)
-        printf("Success!\n");
+        cout << "Success!" << endl;
 
     // Free all our allocated memory
     cudaFree(a);
